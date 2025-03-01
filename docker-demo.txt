@@ -1,0 +1,101 @@
+Docker installation on ubuntu ec2
+=================================
+sudo apt update
+sudo apt upgrade -y
+sudo apt install docker.io -y 
+sudo usermod -aG docker ubuntu 
+sudo init 6 
+docker -v
+
+MysqlContainer
+==============
+docker network create php-mysql
+mkdir database phpapp
+cd  database
+vim init.sql
+CREATE DATABASE IF NOT EXISTS crud_db;
+
+USE crud_db;
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100),
+  `email` varchar(100),
+  `mobile` varchar(15),
+  PRIMARY KEY (`id`)
+);
+
+Create Dockerfile
+================
+vim Dockerfile
+FROM mysql:8.0
+
+# Environment variables for MySQL configuration
+ENV MYSQL_ROOT_PASSWORD=root_password
+ENV MYSQL_DATABASE=crud_db
+ENV MYSQL_USER=admin
+ENV MYSQL_PASSWORD=King#123
+
+# Copy the SQL script to initialize the database
+COPY ./init.sql /docker-entrypoint-initdb.d/
+
+# Expose port 3306 to connect to MySQL
+EXPOSE 3306
+
+Command to build and run mysql command
+=======================================
+docker build -t mysql_crud .
+
+docker run -d -p 3306:3306 --name mysql_container --network=php-mysql mysql_crud
+
+
+PHPContainer
+============
+
+cd ..
+
+cd phpapp
+
+git clone https://github.com/Anjan11011991/crud.git
+
+cd crud 
+
+mv * /home/ubuntu/phpapp
+
+cd ..
+
+rm -rf crud
+
+Create Dockerfile
+================
+vim Dockerfile
+
+# Use the official PHP Apache image
+FROM php:apache
+
+# Install MySQL extensions
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+# Copy the PHP files into the container
+COPY . /var/www/html/
+
+# Expose port 80 to the host
+EXPOSE 80
+
+Command to build and run php container
+=======================================
+docker ps
+
+copy docker container id - 8de599003fee and update in below 
+
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 8de599003fee
+
+172.18.0.2
+
+vim config.php
+
+Change config.php with container ip - 172.19.0.2, user name - admin and password – King#123
+
+docker build -t php_mysql_app .
+
+docker run -d -p 80:80 --name php_mysql_container --network=php-mysql php_mysql_app
